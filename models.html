@@ -156,14 +156,14 @@
         // Load models from API
         async function loadModels() {
             try {
-                // Получаем модели из VibeRouter API
-                const response = await fetch('https://api.vibeRouter.dev/api/v1/pricing');
+                // Получаем модели из локального API (который проксирует VibeRouter)
+                const response = await fetch('/api/models');
                 if (!response.ok) {
                     throw new Error('Не удалось загрузить модели');
                 }
                 const data = await response.json();
                 
-                models = data.filter(m => m.is_active);
+                models = data.pricing.filter(m => m.is_active);
                 displayModels();
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('modelsGrid').style.display = 'grid';
@@ -179,7 +179,12 @@
                         is_active: true,
                         price_per_1m_tokens_input: 30.0,
                         price_per_1m_tokens_output: 60.0,
-                        tokens_per_second: 25.5
+                        owned_by: "openai",
+                        tokens_per_second: 25.5,
+                        token_usage: {
+                            total_input_tokens: 1000000,
+                            total_output_tokens: 500000
+                        }
                     },
                     {
                         model_name: "gpt-3.5-turbo",
@@ -187,7 +192,12 @@
                         is_active: true,
                         price_per_1m_tokens_input: 0,
                         price_per_1m_tokens_output: 0,
-                        tokens_per_second: 45.2
+                        owned_by: "openai",
+                        tokens_per_second: 45.2,
+                        token_usage: {
+                            total_input_tokens: 5000000,
+                            total_output_tokens: 2500000
+                        }
                     },
                     {
                         model_name: "claude-3-sonnet",
@@ -195,7 +205,12 @@
                         is_active: true,
                         price_per_1m_tokens_input: 15.0,
                         price_per_1m_tokens_output: 75.0,
-                        tokens_per_second: 30.1
+                        owned_by: "anthropic",
+                        tokens_per_second: 30.1,
+                        token_usage: {
+                            total_input_tokens: 750000,
+                            total_output_tokens: 350000
+                        }
                     },
                     {
                         model_name: "gemini-pro",
@@ -203,7 +218,12 @@
                         is_active: true,
                         price_per_1m_tokens_input: 0,
                         price_per_1m_tokens_output: 0,
-                        tokens_per_second: 38.7
+                        owned_by: "google",
+                        tokens_per_second: 38.7,
+                        token_usage: {
+                            total_input_tokens: 3000000,
+                            total_output_tokens: 1500000
+                        }
                     }
                 ];
 
@@ -291,6 +311,4 @@
         loadModels();
     </script>
 </body>
-
 </html>
-
