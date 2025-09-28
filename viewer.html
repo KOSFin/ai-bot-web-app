@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Bot - Красивый просмотр</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            line-height: 1.6;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .message-container {
+            margin-bottom: 30px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .user-message {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            margin-left: 50px;
+        }
+        
+        .bot-message {
+            background: var(--tg-theme-secondary-bg-color, #f8f8f8);
+            color: var(--tg-theme-text-color, #000000);
+            margin-right: 50px;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .user-avatar {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .bot-avatar {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: white;
+        }
+        
+        .message-content {
+            font-size: 16px;
+        }
+        
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 16px 0 8px 0;
+        }
+        
+        .message-content p {
+            margin: 8px 0;
+        }
+        
+        .message-content ul, .message-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .message-content blockquote {
+            border-left: 4px solid var(--tg-theme-button-color, #0088cc);
+            margin: 16px 0;
+            padding-left: 16px;
+            opacity: 0.8;
+        }
+        
+        .message-content code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+        }
+        
+        .message-content pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #ff4444;
+            background: #ffeeee;
+            border-radius: 12px;
+            margin: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--tg-theme-hint-color, #888888);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .user-message {
+                margin-left: 20px;
+            }
+            
+            .bot-message {
+                margin-right: 20px;
+            }
+            
+            .message-container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loading" id="loading">⏳ Загрузка сообщения...</div>
+        <div id="messagesContainer" style="display: none;"></div>
+        <div class="error-message" id="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Telegram Web App initialization
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+        }
+
+        function parseUrlData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+            
+            if (!encodedData) {
+                throw new Error('Данные сообщения не найдены');
+            }
+            
+            try {
+                const decodedData = atob(decodeURIComponent(encodedData));
+                return JSON.parse(decodedData);
+            } catch (error) {
+                throw new Error('Не удалось декодировать данные сообщения');
+            }
+        }
+
+        function formatMessage(content) {
+            // Use marked.js to parse markdown
+            if (typeof marked !== 'undefined') {
+                return marked.parse(content);
+            }
+            
+            // Fallback: simple HTML escaping and basic formatting
+            return content
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function displayMessages(data) {
+            const container = document.getElementById('messagesContainer');
+            const timestamp = new Date(data.timestamp * 1000).toLocaleString('ru-RU');
+            
+            container.innerHTML = `
+                <div class="message-container user-message">
+                    <div class="message-header">
+                        <div class="message-avatar user-avatar">👤</div>
+                        <div>Пользователь • ${timestamp}</div>
+                    </div>
+                    <div class="message-content">
+                        ${formatMessage(data.user_message)}
+                    </div>
+                </div>
+                
+                <div class="message-container bot-message">
+                    <div class="message-header">
+                        <div class="message-avatar bot-avatar">🤖</div>
+                        <div>AI Assistant</div>
+                    </div>
+                    <div class="message-content">
+                        ${formatMessage(data.bot_response)}
+                    </div>
+                </div>
+            `;
+            
+            // Highlight code blocks if Prism is available
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+            container.style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+
+        // Initialize
+        try {
+            const messageData = parseUrlData();
+            displayMessages(messageData);
+        } catch (error) {
+            showError(error.message);
+        }
+    </script>
+</body>
+</html>

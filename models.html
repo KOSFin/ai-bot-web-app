@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Bot - Выбор модели</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            line-height: 1.6;
+            padding: 16px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        
+        .filter-tab {
+            padding: 8px 16px;
+            border: 1px solid var(--tg-theme-button-color, #0088cc);
+            border-radius: 20px;
+            background: transparent;
+            color: var(--tg-theme-button-color, #0088cc);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-tab.active {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        
+        .models-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .model-card {
+            border: 1px solid var(--tg-theme-hint-color, #cccccc);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--tg-theme-secondary-bg-color, #f8f8f8);
+        }
+        
+        .model-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .model-card.selected {
+            border-color: var(--tg-theme-button-color, #0088cc);
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        
+        .model-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .model-badge {
+            font-size: 20px;
+        }
+        
+        .model-price {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .model-stats {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--tg-theme-hint-color, #cccccc);
+            border-radius: 8px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-size: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--tg-theme-hint-color, #888888);
+        }
+        
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #ff4444;
+            background: #ffeeee;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Выбор модели</h1>
+        <p>Выберите модель для диалога</p>
+    </div>
+    
+    <input type="text" class="search-box" placeholder="🔍 Поиск модели..." id="searchInput">
+    
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">Все</button>
+        <button class="filter-tab" data-filter="free">🆓 Бесплатные</button>
+        <button class="filter-tab" data-filter="paid">💎 Платные</button>
+    </div>
+    
+    <div class="loading" id="loading">⏳ Загрузка моделей...</div>
+    <div class="models-grid" id="modelsGrid" style="display: none;"></div>
+    <div class="error" id="error" style="display: none;"></div>
+
+    <script>
+        // Telegram Web App initialization
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+        }
+
+        let models = [];
+        let currentFilter = 'all';
+        let selectedModel = null;
+
+        // Load models from API
+        async function loadModels() {
+            try {
+                // В реальном приложении здесь будет вызов к вашему API
+                // Для демонстрации используем моковые данные
+                const mockModels = [
+                    {
+                        model_name: "gpt-4",
+                        is_free: false,
+                        is_active: true,
+                        price_per_1m_tokens_input: 30.0,
+                        price_per_1m_tokens_output: 60.0,
+                        tokens_per_second: 25.5
+                    },
+                    {
+                        model_name: "gpt-3.5-turbo",
+                        is_free: true,
+                        is_active: true,
+                        price_per_1m_tokens_input: 0,
+                        price_per_1m_tokens_output: 0,
+                        tokens_per_second: 45.2
+                    },
+                    {
+                        model_name: "claude-3-sonnet",
+                        is_free: false,
+                        is_active: true,
+                        price_per_1m_tokens_input: 15.0,
+                        price_per_1m_tokens_output: 75.0,
+                        tokens_per_second: 30.1
+                    },
+                    {
+                        model_name: "gemini-pro",
+                        is_free: true,
+                        is_active: true,
+                        price_per_1m_tokens_input: 0,
+                        price_per_1m_tokens_output: 0,
+                        tokens_per_second: 38.7
+                    }
+                ];
+
+                models = mockModels.filter(m => m.is_active);
+                displayModels();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('modelsGrid').style.display = 'grid';
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Ошибка загрузки моделей: ' + error.message;
+            }
+        }
+
+        function displayModels() {
+            const grid = document.getElementById('modelsGrid');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filteredModels = models.filter(model => {
+                const matchesFilter = currentFilter === 'all' || 
+                                    (currentFilter === 'free' && model.is_free) || 
+                                    (currentFilter === 'paid' && !model.is_free);
+                const matchesSearch = model.model_name.toLowerCase().includes(searchTerm);
+                return matchesFilter && matchesSearch;
+            });
+
+            grid.innerHTML = filteredModels.map(model => {
+                const badge = model.is_free ? '🆓' : '💎';
+                const price = model.is_free ? 
+                    'Бесплатно' : 
+                    `$${model.price_per_1m_tokens_input}/$${model.price_per_1m_tokens_output} за 1M`;
+                const speed = model.tokens_per_second ? 
+                    `${model.tokens_per_second.toFixed(1)} токенов/сек` : 
+                    '';
+
+                return `
+                    <div class="model-card" data-model="${model.model_name}">
+                        <div class="model-title">
+                            <span class="model-badge">${badge}</span>
+                            ${model.model_name}
+                        </div>
+                        <div class="model-price">${price}</div>
+                        <div class="model-stats">${speed}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            grid.querySelectorAll('.model-card').forEach(card => {
+                card.addEventListener('click', () => selectModel(card.dataset.model));
+            });
+        }
+
+        function selectModel(modelName) {
+            // Remove previous selection
+            document.querySelectorAll('.model-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            document.querySelector(`[data-model="${modelName}"]`).classList.add('selected');
+            selectedModel = modelName;
+
+            // Send selection back to bot
+            if (window.Telegram?.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.sendData(JSON.stringify({
+                    action: 'select_model',
+                    model: modelName
+                }));
+                tg.close();
+            }
+        }
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                displayModels();
+            });
+        });
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', displayModels);
+
+        // Initialize
+        loadModels();
+    </script>
+</body>
+</html>
