@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Bot - Сообщить о баге</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            line-height: 1.6;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: var(--tg-theme-hint-color, #999999);
+            font-size: 14px;
+        }
+        
+        .form-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-block {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .info-block h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .info-block ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-block li {
+            padding: 4px 0;
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #666666);
+        }
+        
+        .info-block li:before {
+            content: "• ";
+            color: var(--tg-theme-button-color, #0088cc);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .form-group textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid var(--tg-theme-button-color, #0088cc);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            resize: vertical;
+            flex: 1;
+        }
+        
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #0088cc);
+            box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.2);
+        }
+        
+        .form-group textarea::placeholder {
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+            margin-top: 4px;
+        }
+        
+        .submit-section {
+            margin-top: auto;
+            padding-top: 20px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .submit-btn:disabled {
+            background: var(--tg-theme-hint-color, #cccccc);
+            cursor: not-allowed;
+        }
+        
+        .reward-info {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .reward-info h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .reward-info p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .examples {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .examples h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .example-item {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666666);
+            border-left: 3px solid var(--tg-theme-button-color, #0088cc);
+        }
+        
+        .example-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        @media (max-height: 600px) {
+            .form-group textarea {
+                min-height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐛 Сообщить о баге</h1>
+        <p>Помогите нам улучшить бота</p>
+    </div>
+    
+    <div class="reward-info">
+        <h3>💰 Мы платим за баги!</h3>
+        <p>За каждую подтверждённую ошибку вы получите звёзды на баланс</p>
+    </div>
+    
+    <div class="info-block">
+        <h3>📋 О каких проблемах стоит сообщать:</h3>
+        <ul>
+            <li>Баги в работе бота</li>
+            <li>Ошибки в ответах ИИ</li>
+            <li>Проблемы с интерфейсом</li>
+            <li>Неполадки с веб-приложениями</li>
+            <li>Проблемы с платежами</li>
+        </ul>
+    </div>
+    
+    <div class="examples">
+        <h4>📝 Примеры хороших багрепортов:</h4>
+        <div class="example-item">
+            "Бот не отвечает на сообщения после выбора модели GPT-4. Пишу текст, но получаю только 'Думаю...' и ничего не происходит. Пробовал перезапустить - не помогает."
+        </div>
+        <div class="example-item">
+            "При пополнении баланса на 500 звёзд деньги списались, но баланс не изменился. Номер транзакции: 123456789"
+        </div>
+        <div class="example-item">
+            "В inline-режиме бот отвечает неправильно. Задаю вопрос 'Как дела?', а получаю ответ на совершенно другую тему."
+        </div>
+    </div>
+    
+    <div class="form-container">
+        <div class="form-group">
+            <label for="reportText">Опишите проблему подробно:</label>
+            <textarea 
+                id="reportText" 
+                placeholder="Расскажите, что именно не работает, в каких условиях возникает проблема, какие сообщения об ошибках вы видите...&#10;&#10;Чем подробнее опишете проблему, тем быстрее мы её исправим и тем больше будет награда!"
+                maxlength="2000"
+            ></textarea>
+            <div class="char-counter">
+                <span id="charCount">0</span>/2000 символов
+            </div>
+        </div>
+        
+        <div class="submit-section">
+            <button class="submit-btn" id="submitBtn" disabled>
+                📤 Отправить багрепорт
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Элементы формы
+        const textarea = document.getElementById('reportText');
+        const charCount = document.getElementById('charCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Обновление счётчика символов
+        textarea.addEventListener('input', function() {
+            const length = textarea.value.length;
+            charCount.textContent = length;
+            
+            // Активация кнопки только если есть текст (минимум 10 символов)
+            submitBtn.disabled = length < 10;
+            
+            // Изменение цвета счётчика при приближении к лимиту
+            if (length > 1800) {
+                charCount.style.color = '#ff4444';
+            } else if (length > 1500) {
+                charCount.style.color = '#ff8800';
+            } else {
+                charCount.style.color = 'var(--tg-theme-hint-color, #999999)';
+            }
+        });
+        
+        // Отправка багрепорта
+        submitBtn.addEventListener('click', function() {
+            const reportText = textarea.value.trim();
+            
+            if (reportText.length < 10) {
+                tg.showAlert('Пожалуйста, опишите проблему более подробно (минимум 10 символов)');
+                return;
+            }
+            
+            if (reportText.length > 2000) {
+                tg.showAlert('Описание слишком длинное. Максимум 2000 символов');
+                return;
+            }
+            
+            // Подтверждение отправки
+            tg.showConfirm('Отправить багрепорт?', function(confirmed) {
+                if (confirmed) {
+                    // Отправляем данные боту
+                    const data = {
+                        action: 'submit_bug_report',
+                        report_text: reportText
+                    };
+                    
+                    tg.sendData(JSON.stringify(data));
+                }
+            });
+        });
+        
+        // Обработка темы Telegram
+        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
+        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#0088cc');
+        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f5f5f5');
+        
+        // Автофокус на поле ввода
+        setTimeout(() => {
+            textarea.focus();
+        }, 300);
+    </script>
+</body>
+</html>
