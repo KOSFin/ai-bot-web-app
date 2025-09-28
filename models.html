@@ -157,7 +157,7 @@
         async function loadModels() {
             try {
                 // Получаем модели из VibeRouter API
-                const response = await fetch('https://api.vibeRouter.dev/v1/models');
+                const response = await fetch('https://api.vibeRouter.dev/api/v1/pricing');
                 if (!response.ok) {
                     throw new Error('Не удалось загрузить модели');
                 }
@@ -293,3 +293,4 @@
 </body>
 
 </html>
+
