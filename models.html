@@ -156,8 +156,22 @@
         // Load models from API
         async function loadModels() {
             try {
-                // В реальном приложении здесь будет вызов к вашему API
-                // Для демонстрации используем моковые данные
+                // Получаем модели из VibeRouter API
+                const response = await fetch('https://api.vibeRouter.dev/api/models');
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить модели');
+                }
+                const data = await response.json();
+                
+                models = data.filter(m => m.is_active);
+                displayModels();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('modelsGrid').style.display = 'grid';
+                
+            } catch (error) {
+                console.error('Ошибка загрузки моделей:', error);
+                
+                // Fallback к моковым данным если API недоступен
                 const mockModels = [
                     {
                         model_name: "gpt-4",
@@ -197,11 +211,6 @@
                 displayModels();
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('modelsGrid').style.display = 'grid';
-                
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'Ошибка загрузки моделей: ' + error.message;
             }
         }
 

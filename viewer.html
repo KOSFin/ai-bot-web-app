@@ -183,10 +183,18 @@
             }
             
             try {
-                const decodedData = atob(decodeURIComponent(encodedData));
+                // Декодируем данные с корректной обработкой UTF-8
+                const decodedData = decodeURIComponent(escape(atob(encodedData)));
                 return JSON.parse(decodedData);
             } catch (error) {
-                throw new Error('Не удалось декодировать данные сообщения');
+                console.error('Ошибка декодирования:', error);
+                try {
+                    // Попробуем альтернативный способ декодирования
+                    const decodedData = atob(decodeURIComponent(encodedData));
+                    return JSON.parse(decodedData);
+                } catch (error2) {
+                    throw new Error('Не удалось декодировать данные сообщения');
+                }
             }
         }
 
